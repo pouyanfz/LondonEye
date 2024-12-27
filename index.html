@@ -1,0 +1,231 @@
+<!-- 
+    o Student Name: Pouyan Forouzandeh
+    o Instructor Name: Anumpama Gupta
+    o Section Number: M01
+ -->
+
+ <!DOCTYPE html>
+ <html>
+ 
+ <head>
+     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ 
+     <title>Babylon.js sample code</title>
+ 
+     <!-- Babylon.js -->
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+     <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+     <script src="https://cdn.babylonjs.com/recast.js"></script>
+     <script src="https://cdn.babylonjs.com/ammo.js"></script>
+     <script src="https://cdn.babylonjs.com/havok/HavokPhysics_umd.js"></script>
+     <script src="https://cdn.babylonjs.com/cannon.js"></script>
+     <script src="https://cdn.babylonjs.com/Oimo.js"></script>
+     <script src="https://cdn.babylonjs.com/earcut.min.js"></script>
+     <script src="https://cdn.babylonjs.com/babylon.js"></script>
+     <script src="https://cdn.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+     <script src="https://cdn.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+     <script src="https://cdn.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+     <script src="https://cdn.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+     <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+     <script src="https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+ 
+     <style>
+         html,
+         body {
+             overflow: hidden;
+             width: 100%;
+             height: 100%;
+             margin: 0;
+             padding: 0;
+         }
+ 
+         #renderCanvas {
+             width: 100%;
+             height: 100%;
+             touch-action: none;
+         }
+ 
+         #canvasZone {
+             width: 100%;
+             height: 100%;
+         }
+     </style>
+ </head>
+ 
+ <body>
+     <div id="canvasZone"><canvas id="renderCanvas"></canvas></div>
+     <script>
+         var canvas = document.getElementById("renderCanvas");
+ 
+         var startRenderLoop = function (engine, canvas) {
+             engine.runRenderLoop(function () {
+                 if (sceneToRender && sceneToRender.activeCamera) {
+                     sceneToRender.render();
+                 }
+             });
+         }
+ 
+         var engine = null;
+         var scene = null;
+         var sceneToRender = null;
+         var createDefaultEngine = function () { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, disableWebGL2Support: false }); };
+         var createScene = function () {
+             // This creates a basic Babylon Scene object (non-mesh)
+             var scene = new BABYLON.Scene(engine);
+ 
+             // This creates and positions a free camera (non-mesh)
+             var camera = new BABYLON.ArcRotateCamera("Camera", -Math.PI / 3, Math.PI / 2, 50, BABYLON.Vector3.Zero(), scene);
+ 
+             // This targets the camera to scene origin
+             camera.setTarget(BABYLON.Vector3.Zero());
+ 
+             // This attaches the camera to the canvas
+             camera.attachControl(canvas, true);
+ 
+ 
+             // 2 lights
+             let light = new BABYLON.DirectionalLight("light", new BABYLON.Vector3(1, 0, 0));
+             light.diffuse = new BABYLON.Color3(2, 0.6, 0.4);
+             light.intensity = 0.5;
+ 
+             let ambient = new BABYLON.HemisphericLight("ambient", new BABYLON.Vector3(1, 1, 0));
+             ambient.diffuse = new BABYLON.Color3(0.6, 0.8, 1.0);
+             ambient.intensity = 1.5;
+ 
+ 
+             // The London Eye as paranet (empty mesh)
+             let londonEye = new BABYLON.Mesh();
+             londonEye.position.y = 5;
+ 
+             // red center
+             var center = BABYLON.MeshBuilder.CreateCylinder("londonEye", { diameter: 2, height: 2 });
+             center.position.y = 0;
+             center.rotation.x = Math.PI / 2;
+             center.material = new BABYLON.StandardMaterial("londonEyeMaterial");
+             center.material.diffuseColor = new BABYLON.Color3(1.5, 0.5, 0.5);
+             center.parent = londonEye;
+ 
+             // The ring
+             let ring = BABYLON.MeshBuilder.CreateTorus("ring", { diameter: 19, thickness: 0.2, tessellation: 60 });
+             ring.position.y = 5;
+             ring.position
+             ring.material = new BABYLON.StandardMaterial("ringMaterial");
+             ring.rotation.x = Math.PI / 2;
+             ring.material.diffuseColor = new BABYLON.Color3(0, 0, 0);
+ 
+             
+             // Create the capsules of the London Eye
+             let numberOfCapsules = 22;
+             for (let i = 0; i < numberOfCapsules; i++) {
+                 let angle = (i / numberOfCapsules) * (2 * Math.PI);
+                 let radius = 10;
+                 let capsule = BABYLON.MeshBuilder.CreateSphere("capsule" + i, { size: 1.5 });
+                 capsule.position.x = Math.sin(angle) * radius;
+                 capsule.position.y = Math.cos(angle) * radius;
+                 capsule.position.z = 0;
+                 capsule.scaling.z = 1.75
+                 capsule.parent = londonEye;
+                 capsule.material = new BABYLON.StandardMaterial("capsuleMaterial");
+                 capsule.material.diffuseTexture = new BABYLON.Texture("./Images/sky.jpg");
+ 
+                 // cables
+                 let cablePoints = [
+                     new BABYLON.Vector3(0, 0, 0),  // Starting point (center)
+                     new BABYLON.Vector3(Math.sin(angle) * radius, Math.cos(angle) * radius, 0) // End point (capsule position)
+                 ];
+ 
+                 let cable = BABYLON.MeshBuilder.CreateTube("cable" + i, { path: cablePoints, radius: 0.05, tessellation: 60 });
+                 cable.material = new BABYLON.StandardMaterial("cableMaterial");
+                 cable.material.diffuseColor = new BABYLON.Color3(0.5, 0.8, 0.8);
+                 cable.parent = londonEye;
+             }
+ 
+             // The columns
+             let column_location = [new BABYLON.Vector3(8, -7, 6), new BABYLON.Vector3(0, 5, 0), new BABYLON.Vector3(-8, -7, 6)];
+             let column = BABYLON.MeshBuilder.CreateTube("post", { path: column_location, radius: 0.5, tessellation: 60 });
+             let columnMaterial = new BABYLON.StandardMaterial("columnMaterial");
+             column.material = columnMaterial;
+             columnMaterial.diffuseTexture = new BABYLON.Texture("./Images/CF.jpg");
+ 
+ 
+             // The ground
+             let ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 36, height: 36 });
+             ground.position.y = -7;
+             let groundMaterial = new BABYLON.StandardMaterial("ground-material");
+             ground.material = groundMaterial;
+             groundMaterial.diffuseTexture = new BABYLON.Texture("./Images/water.jpg");
+             groundMaterial.specularTexture = new BABYLON.Texture("./Images/water.jpg");
+             groundMaterial.specularPower = 10;
+ 
+ 
+             // Animation
+             const frameRate = 15;
+             const animationLength = 30;
+ 
+             let londonEyeRotationAnimation = new BABYLON.Animation("londonEye rotation animation", "rotation", frameRate, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+ 
+             let londonEyeRotationKeyFrame = [
+                 {
+                     frame: 0,
+                     value: new BABYLON.Vector3(0, 0, 0)
+                 },
+                 {
+                     frame: animationLength * frameRate / 4,
+                     value: new BABYLON.Vector3(0, 0, Math.PI)
+                 },
+                 {
+                     frame: animationLength * frameRate / 2,
+                     value: new BABYLON.Vector3(0, 0, 0)
+                 },
+                 {
+                     frame: animationLength * frameRate * 3 / 4,
+                     value: new BABYLON.Vector3(0, 0, Math.PI)
+                 },
+                 {
+                     frame: animationLength * frameRate,
+                     value: new BABYLON.Vector3(0, 0, 0)
+                 }
+             ];
+ 
+             let cubicEase = new BABYLON.CubicEase();
+             cubicEase.setEasingMode(BABYLON.EasingFunction.EASINGMODE_EASEINOUT);
+ 
+             londonEyeRotationAnimation.setKeys(londonEyeRotationKeyFrame);
+             londonEyeRotationAnimation.setEasingFunction(cubicEase);
+             scene.beginDirectAnimation(londonEye, [londonEyeRotationAnimation], 0, animationLength * frameRate, true)
+ 
+ 
+ 
+             return scene;
+         };
+         window.initFunction = async function () {
+ 
+ 
+ 
+             var asyncEngineCreation = async function () {
+                 try {
+                     return createDefaultEngine();
+                 } catch (e) {
+                     console.log("the available createEngine function failed. Creating the default engine instead");
+                     return createDefaultEngine();
+                 }
+             }
+ 
+             window.engine = await asyncEngineCreation();
+             if (!engine) throw 'engine should not be null.';
+             startRenderLoop(engine, canvas);
+             window.scene = createScene();
+         };
+         initFunction().then(() => {
+             sceneToRender = scene
+         });
+ 
+         // Resize
+         window.addEventListener("resize", function () {
+             engine.resize();
+         });
+     </script>
+ </body>
+ 
+ </html>
